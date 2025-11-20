@@ -1,0 +1,429 @@
+openapi: 3.1.0
+info:
+  title: Kaspi Delivery API
+  version: "1.0.0"
+  description: >
+    Public API for creating deliveries with Kaspi, tracking status, and reacting to webhook events.
+    Use the sandbox base URL while testing: https://sandbox.kaspi.kz/delivery.
+servers:
+  - url: https://api.kaspi.kz/delivery
+    description: Production
+  - url: https://sandbox.kaspi.kz/delivery
+    description: Sandbox
+tags:
+  - name: Deliveries
+    description: Create, retrieve, and cancel deliveries.
+  - name: Webhooks
+    description: Configure and test delivery webhooks.
+paths:
+  /v1/deliveries:
+    post:
+      tags: [Deliveries]
+      summary: Create a delivery
+      description: Create a new delivery with pickup and drop-off details.
+      operationId: createDelivery
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryRequest"
+            examples:
+              default:
+                summary: Create delivery
+                value:
+                  externalOrderId: order-2024-0191
+                  pickup:
+                    address: 21 Zhibek Zholy, Almaty
+                    contact:
+                      name: Kaspi Warehouse
+                      phone: "+7 727 111 0000"
+                  dropoff:
+                    address: 17 Abylay Khan Ave, Almaty
+                    contact:
+                      name: Dana K.
+                      phone: "+7 701 111 1111"
+                    notes: Entrance B, floor 6
+                  parcel:
+                    description: Electronics, insured
+                    weightGrams: 1200
+                    valueKzt: 85000
+      responses:
+        "201":
+          description: Delivery created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryCreated"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /v1/deliveries/{deliveryId}:
+    get:
+      tags: [Deliveries]
+      summary: Get a delivery
+      description: Fetch the latest status for a delivery.
+      operationId: getDelivery
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          description: Kaspi delivery id.
+          schema:
+            type: string
+        - name: includeHistory
+          in: query
+          required: false
+          description: Include status transition history.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Delivery found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delivery"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Delivery not found
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /v1/deliveries/{deliveryId}/cancel:
+    post:
+      tags: [Deliveries]
+      summary: Cancel a delivery
+      description: Cancel a delivery before pickup is completed.
+      operationId: cancelDelivery
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  example: Customer changed address
+      responses:
+        "200":
+          description: Cancel accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delivery"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /v1/webhooks/test:
+    post:
+      tags: [Webhooks]
+      summary: Send a test webhook
+      description: Trigger a webhook event to verify your listener.
+      operationId: sendTestWebhook
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: The webhook URL to send to.
+                  example: https://example.com/kaspi/webhook
+                type:
+                  type: string
+                  description: Event type to send.
+                  enum:
+                    - delivery.created
+                    - delivery.accepted
+                    - delivery.in_transit
+                    - delivery.out_for_delivery
+                    - delivery.delivered
+                    - delivery.cancelled
+                  example: delivery.created
+      responses:
+        "202":
+          description: Test event scheduled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eventId:
+                    type: string
+                    example: wh_test_019
+                  status:
+                    type: string
+                    example: queued
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+webhooks:
+  deliveryStatus:
+    post:
+      summary: Delivery status webhook
+      description: Example payload delivered to your webhook URL.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryWebhook"
+            examples:
+              delivered:
+                value:
+                  eventId: wh_3e0a
+                  type: delivery.delivered
+                  attempt: 1
+                  data:
+                    deliveryId: dlv_01hfz18tnb7tqw
+                    externalOrderId: order-2024-0191
+                    status: delivered
+                    timestamp: "2024-06-12T18:32:14Z"
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: Recommended for POST/DELETE so retries do not duplicate work.
+      schema:
+        type: string
+  responses:
+    Unauthorized:
+      description: Missing or invalid API key.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: unauthorized
+            message: Invalid API key
+    Conflict:
+      description: The action cannot be performed due to the current delivery state or idempotency key mismatch.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: conflict
+            message: Delivery is already in transit
+    RateLimited:
+      description: Too many requests; retry with backoff.
+      headers:
+        Retry-After:
+          description: Seconds until the next request can be made.
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: rate_limited
+            message: Too many requests
+  schemas:
+    DeliveryRequest:
+      type: object
+      required:
+        - externalOrderId
+        - pickup
+        - dropoff
+        - parcel
+      properties:
+        externalOrderId:
+          type: string
+          description: Your internal order id for idempotency and reconciliation.
+          example: order-2024-0191
+        pickup:
+          $ref: "#/components/schemas/Location"
+        dropoff:
+          $ref: "#/components/schemas/Location"
+        parcel:
+          $ref: "#/components/schemas/Parcel"
+    DeliveryCreated:
+      type: object
+      properties:
+        deliveryId:
+          type: string
+          example: dlv_01hfz18tnb7tqw
+        status:
+          $ref: "#/components/schemas/DeliveryStatus"
+        trackingUrl:
+          type: string
+          format: uri
+          example: https://track.kaspi.kz/dlv_01hfz18tnb7tqw
+        eta:
+          $ref: "#/components/schemas/Eta"
+    Delivery:
+      type: object
+      properties:
+        deliveryId:
+          type: string
+          example: dlv_01hfz18tnb7tqw
+        externalOrderId:
+          type: string
+          example: order-2024-0191
+        status:
+          $ref: "#/components/schemas/DeliveryStatus"
+        pickup:
+          $ref: "#/components/schemas/Location"
+        dropoff:
+          $ref: "#/components/schemas/Location"
+        parcel:
+          $ref: "#/components/schemas/Parcel"
+        trackingUrl:
+          type: string
+          format: uri
+          example: https://track.kaspi.kz/dlv_01hfz18tnb7tqw
+        eta:
+          $ref: "#/components/schemas/Eta"
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusHistory"
+    Location:
+      type: object
+      required:
+        - address
+        - contact
+      properties:
+        address:
+          type: string
+          example: 21 Zhibek Zholy, Almaty
+        contact:
+          $ref: "#/components/schemas/Contact"
+        notes:
+          type: string
+          example: Entrance B, call when outside
+    Contact:
+      type: object
+      required:
+        - name
+        - phone
+      properties:
+        name:
+          type: string
+          example: Kaspi Warehouse
+        phone:
+          type: string
+          example: "+7 727 111 0000"
+    Parcel:
+      type: object
+      required:
+        - description
+        - weightGrams
+        - valueKzt
+      properties:
+        description:
+          type: string
+          example: Electronics, insured
+        weightGrams:
+          type: integer
+          example: 1200
+        valueKzt:
+          type: integer
+          description: Declared value in KZT for insurance.
+          example: 85000
+    Eta:
+      type: object
+      properties:
+        pickupBy:
+          type: string
+          format: date-time
+          example: "2024-06-12T08:20:54Z"
+        deliveryBy:
+          type: string
+          format: date-time
+          example: "2024-06-12T18:20:54Z"
+    StatusHistory:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/DeliveryStatus"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-06-12T08:20:54Z"
+        notes:
+          type: string
+          example: Courier assigned
+    DeliveryWebhook:
+      type: object
+      properties:
+        eventId:
+          type: string
+          example: wh_3e0a
+        type:
+          type: string
+          example: delivery.out_for_delivery
+        attempt:
+          type: integer
+          example: 2
+        data:
+          type: object
+          properties:
+            deliveryId:
+              type: string
+              example: dlv_01hfz18tnb7tqw
+            externalOrderId:
+              type: string
+              example: order-2024-0191
+            status:
+              $ref: "#/components/schemas/DeliveryStatus"
+            timestamp:
+              type: string
+              format: date-time
+              example: "2024-06-12T11:05:22Z"
+    DeliveryStatus:
+      type: string
+      enum:
+        - created
+        - accepted
+        - in_transit
+        - out_for_delivery
+        - delivered
+        - cancelled
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: unauthorized
+        message:
+          type: string
+          example: Invalid API key

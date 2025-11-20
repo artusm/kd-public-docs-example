@@ -2,6 +2,7 @@
 import { h } from "vue";
 import type { Theme } from "vitepress";
 import DefaultTheme from "vitepress/theme";
+import "virtual:group-icons.css";
 
 import { theme } from "vitepress-openapi/client";
 import "vitepress-openapi/dist/style.css";

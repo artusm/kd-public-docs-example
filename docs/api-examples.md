@@ -1,49 +1,87 @@
----
-outline: deep
----
+# Code samples
 
-# Runtime API Examples
+Use these snippets to connect quickly. Replace `YOUR_API_KEY` with your sandbox or production key.
 
-This page demonstrates usage of some of the runtime APIs provided by VitePress.
+## Create a delivery
 
-The main `useData()` API can be used to access site, theme, and page data for the current page. It works in both `.md` and `.vue` files:
-
-```md
-<script setup>
-import { useData } from 'vitepress'
-
-const { theme, page, frontmatter } = useData()
-</script>
-
-## Results
-
-### Theme Data
-<pre>{{ theme }}</pre>
-
-### Page Data
-<pre>{{ page }}</pre>
-
-### Page Frontmatter
-<pre>{{ frontmatter }}</pre>
+```bash
+curl -X POST https://sandbox.kaspi.kz/delivery/v1/deliveries \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "externalOrderId": "order-1290",
+    "pickup": { "address": "12 Abai Ave, Astana", "contact": { "name": "Kaspi Hub", "phone": "+7 702 000 0000" } },
+    "dropoff": { "address": "9 Mangilik El, Astana", "contact": { "name": "Dinara T.", "phone": "+7 701 999 9999" } },
+    "parcel": { "description": "Accessories", "weightGrams": 550, "valueKzt": 12000 }
+  }'
 ```
 
-<script setup>
-import { useData } from 'vitepress'
+## Node.js
 
-const { site, theme, page, frontmatter } = useData()
-</script>
+```js
+import fetch from "node-fetch";
 
-## Results
+const baseUrl = "https://sandbox.kaspi.kz/delivery";
+const apiKey = process.env.KASPI_API_KEY;
 
-### Theme Data
-<pre>{{ theme }}</pre>
+async function createDelivery() {
+  const res = await fetch(`${baseUrl}/v1/deliveries`, {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "Content-Type": "application/json",
+      "Idempotency-Key": "order-1290",
+    },
+    body: JSON.stringify({
+      externalOrderId: "order-1290",
+      pickup: { address: "12 Abai Ave, Astana", contact: { name: "Kaspi Hub", phone: "+7 702 000 0000" } },
+      dropoff: { address: "9 Mangilik El, Astana", contact: { name: "Dinara T.", phone: "+7 701 999 9999" } },
+      parcel: { description: "Accessories", weightGrams: 550, valueKzt: 12000 },
+    }),
+  });
 
-### Page Data
-<pre>{{ page }}</pre>
+  if (!res.ok) throw new Error(`Kaspi responded ${res.status}`);
+  return res.json();
+}
+```
 
-### Page Frontmatter
-<pre>{{ frontmatter }}</pre>
+## Python
 
-## More
+```python
+import os
+import requests
 
-Check out the documentation for the [full list of runtime APIs](https://vitepress.dev/reference/runtime-api#usedata).
+BASE_URL = "https://sandbox.kaspi.kz/delivery"
+API_KEY = os.environ["KASPI_API_KEY"]
+
+resp = requests.get(
+    f"{BASE_URL}/v1/deliveries/dlv_01hfz18tnb7tqw",
+    headers={"x-api-key": API_KEY},
+    timeout=10,
+)
+
+resp.raise_for_status()
+print(resp.json())
+```
+
+## Verify webhook signatures (Node)
+
+```js
+import crypto from "node:crypto";
+
+function verifyKaspiSignature({ rawBody, signature, timestamp, secret }) {
+  const payload = `${timestamp}.${rawBody}`;
+  const expected = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+  return crypto.timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(signature, "hex"));
+}
+```
+
+## Error handling
+
+Retry with exponential backoff on:
+
+- `429` Too Many Requests
+- `5xx` responses
+- Network errors
+
+Do not retry POST/DELETE requests without an `Idempotency-Key`.
