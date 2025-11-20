@@ -22,6 +22,34 @@ paths:
       summary: Create a delivery
       description: Create a new delivery with pickup and drop-off details.
       operationId: createDelivery
+      x-codeSamples:
+        - lang: Java
+          label: Java (generated DTOs)
+          source: |
+            ApiClient client = new ApiClient()
+              .setBasePath("https://sandbox.kaspi.kz/delivery")
+              .addDefaultHeader("x-api-key", System.getenv("KASPI_API_KEY"));
+
+            DeliveriesApi deliveries = new DeliveriesApi(client);
+
+            DeliveryRequest body = new DeliveryRequest()
+              .externalOrderId("order-2024-0191")
+              .pickup(new Location()
+                .address("21 Zhibek Zholy, Almaty")
+                .contact(new Contact().name("Kaspi Warehouse").phone("+7 727 111 0000")))
+              .dropoff(new Location()
+                .address("17 Abylay Khan Ave, Almaty")
+                .contact(new Contact().name("Dana K.").phone("+7 701 111 1111")))
+              .parcel(new Parcel()
+                .description("Electronics, insured")
+                .weightGrams(1200)
+                .valueKzt(85000));
+
+            var response = deliveries.createDelivery(body)
+              .addHeader("Idempotency-Key", "order-2024-0191")
+              .execute();
+
+            System.out.println(response.getBody().getTrackingUrl());
       security:
         - ApiKeyAuth: []
       parameters:
@@ -71,6 +99,21 @@ paths:
       summary: Get a delivery
       description: Fetch the latest status for a delivery.
       operationId: getDelivery
+      x-codeSamples:
+        - lang: Java
+          label: Java (generated DTOs)
+          source: |
+            ApiClient client = new ApiClient()
+              .setBasePath("https://sandbox.kaspi.kz/delivery")
+              .addDefaultHeader("x-api-key", System.getenv("KASPI_API_KEY"));
+
+            DeliveriesApi deliveries = new DeliveriesApi(client);
+
+            var delivery = deliveries.getDelivery("dlv_01hfz18tnb7tqw", null)
+              .execute()
+              .getBody();
+
+            System.out.println(delivery.getStatus());
       security:
         - ApiKeyAuth: []
       parameters:

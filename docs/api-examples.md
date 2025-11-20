@@ -85,3 +85,51 @@ Retry with exponential backoff on:
 - Network errors
 
 Do not retry POST/DELETE requests without an `Idempotency-Key`.
+
+## Java + DTO generation
+
+Generate Java DTOs and a lightweight client from the spec:
+
+```bash
+npx @openapitools/openapi-generator-cli generate \
+  -i docs/public/openapi.yaml \
+  -g java \
+  -o ./generated/kaspi-java-client \
+  --additional-properties=library=webclient,hideGenerationTimestamp=true
+```
+
+Example usage (WebClient):
+
+```java
+import com.kaspi.delivery.ApiClient;
+import com.kaspi.delivery.api.DeliveriesApi;
+import com.kaspi.delivery.model.DeliveryRequest;
+import com.kaspi.delivery.model.Location;
+import com.kaspi.delivery.model.Contact;
+import com.kaspi.delivery.model.Parcel;
+
+ApiClient client = new ApiClient()
+    .setBasePath("https://sandbox.kaspi.kz/delivery")
+    .addDefaultHeader("x-api-key", System.getenv("KASPI_API_KEY"));
+
+DeliveriesApi deliveries = new DeliveriesApi(client);
+
+DeliveryRequest body = new DeliveryRequest()
+    .externalOrderId("order-1290")
+    .pickup(new Location()
+        .address("12 Abai Ave, Astana")
+        .contact(new Contact().name("Kaspi Hub").phone("+7 702 000 0000")))
+    .dropoff(new Location()
+        .address("9 Mangilik El, Astana")
+        .contact(new Contact().name("Dinara T.").phone("+7 701 999 9999")))
+    .parcel(new Parcel()
+        .description("Accessories")
+        .weightGrams(550)
+        .valueKzt(12000));
+
+var response = deliveries.createDelivery(body)
+    .addHeader("Idempotency-Key", "order-1290")
+    .execute();
+
+System.out.println(response.getBody().getDeliveryId());
+```

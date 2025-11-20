@@ -321,6 +321,42 @@ a:hover {
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
 }
 
+/* OpenAPI playground readability */
+.OAPath,
+.OASpec .oa-doc section,
+.OASpec .oa-doc .panel,
+.OASpec .oa-doc .OAServer,
+.OASpec .oa-doc .OAServerEntry,
+.OASpec .oa-doc .OAParameters,
+.OASpec .oa-doc .OARequestBody,
+.OASpec .oa-doc .OAResponses,
+.OASpec .oa-doc .OATabs-panel,
+.OASpec .oa-doc pre,
+.OASpec .oa-doc code,
+.OASpec .oa-doc .OACard,
+.OASpec .oa-doc .OAPlayground,
+.OASpec .oa-doc .OAPlayground form,
+.OASpec .oa-doc .OAPlaygroundParameters,
+.OASpec .oa-doc .OARequest,
+.OASpec .oa-doc .OAResponse {
+  padding: 1rem;
+  background-color: color-mix(in srgb, var(--vp-c-bg) 92%, #0f1115 8%);
+  border: 1px solid var(--vp-c-border);
+  border-radius: 12px;
+}
+
+.OASpec .oa-doc .OAServerEntry button,
+.OASpec .oa-doc input,
+.OASpec .oa-doc select {
+  background-color: var(--vp-c-bg-alt);
+  border: 1px solid var(--vp-c-border);
+}
+
+.dark .OASpec .oa-doc pre,
+.dark .OASpec .oa-doc code {
+  background-color: #0f1218;
+}
+
 .OAMethodBadge--post,
 .OAMethodBadge--put,
 .OAMethodBadge--patch {
@@ -488,4 +524,13 @@ a:hover {
 .OASidebar,
 .OASidebarItem {
   background: transparent !important;
+}
+
+.DocSearch-Button-Keys::after {
+  content: none;
+  display: none;
+}
+
+.DocSearch-Button-Key {
+  margin-right: 0 !important;
 }

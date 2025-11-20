@@ -97,6 +97,7 @@ export default withPwa(
             ".js",
             ".py",
             ".php",
+            ".java",
           ],
         }),
 
