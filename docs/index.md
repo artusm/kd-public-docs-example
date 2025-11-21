@@ -5,6 +5,18 @@ outline: false
 layout: home
 ---
 
+<script setup>
+import { ref, onMounted } from 'vue'
+import animationData from './public/lottie/delivery-service.json'
+
+const Vue3Lottie = ref(null)
+
+onMounted(async () => {
+  const module = await import('vue3-lottie')
+  Vue3Lottie.value = module.Vue3Lottie
+})
+</script>
+
 <div class="k-hero k-card">
   <div class="k-hero-grid">
     <div class="k-hero-left" style="display: grid; gap: 1rem;">
@@ -28,7 +40,9 @@ layout: home
       </div>
     </div>
     <div class="k-hero-right">
-      <img src="/images/kaspi-logo.svg" alt="Kaspi logo" style="width: 72px; height: 72px; border-radius: 16px; border: 1px solid var(--vp-c-border); background: #fff;" />
+      <ClientOnly height="300px" width="300px">
+        <component v-if="Vue3Lottie" :is="Vue3Lottie" :animationData="animationData" :height="300" :width="300" />
+      </ClientOnly>
       <div class="k-metrics">
         <div class="k-metric-card">
           <div style="font-size: 1rem; color: var(--vp-c-text-3);">API uptime</div>

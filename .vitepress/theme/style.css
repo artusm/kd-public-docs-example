@@ -90,7 +90,6 @@ body {
 
 .Layout {
   position: relative;
-  overflow: hidden;
 }
 
 .Layout::before,
@@ -533,4 +532,12 @@ a:hover {
 
 .DocSearch-Button-Key {
   margin-right: 0 !important;
+}
+
+body, html, #app {
+  @apply min-h-screen;
+}
+
+.Layout::after {
+  @apply hidden;
 }

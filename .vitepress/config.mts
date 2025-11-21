@@ -23,6 +23,11 @@ const spec = parse(
   )
 );
 
+const logo = fs.readFileSync(
+  path.join(import.meta.dirname, "../docs/public/images/ks-logo.svg"),
+  "utf8"
+);
+
 const sidebar = useSidebar({
   spec,
   // Optionally, you can specify a link prefix for all generated sidebar items. Default is `/operations/`.
@@ -41,6 +46,16 @@ export default withPwa(
     vite: {
       plugins: [
         tailwindcss(),
+        AnnouncementPlugin({
+          title: "🚨 Announcement",
+          body: [
+            {
+              type: "text",
+              content:
+                "A new version of the API is available. Please review the changelog for details.",
+            },
+          ],
+        }),
         // For details, refer to https://github.com/antfu/unplugin-auto-import#configuration
         AutoImportAPIs({
           include: [
@@ -178,11 +193,7 @@ export default withPwa(
       socialLinks: [
         {
           icon: {
-            svg: `<svg viewBox="0 0 24 24" role="img" aria-label="Kaspi">
-<circle cx="12" cy="12" r="12" fill="#E94B35"/>
-<path d="M8.4 4.5C7.1 4.5 6 5.6 6 6.9v10.8c0 1.2.9 2.1 2.1 2.1 1.2 0 2.1-.9 2.1-2.1v-4.3l2.9 3.6a1.8 1.8 0 0 0 2.6.3l1.4-1.1a1.8 1.8 0 0 0 .3-2.6l-3-3.8 3.7-3.7a1.6 1.6 0 0 0-2.3-2.3l-4.1 4.1-1.6-2a2.9 2.9 0 0 0-2.7-1.3Z" fill="#fff"/>
-<circle cx="7.6" cy="8.3" r="1.5" fill="#fff"/>
-</svg>`,
+            svg: logo,
           },
           link: "https://kaspi.kz/",
         },
